@@ -50,3 +50,4 @@ pip install pyrr
 ```python
 pip install pygame
 ```
+With that out of the way, we should be ready for the prac exercises!
