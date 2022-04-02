@@ -288,8 +288,8 @@ class App:
 
         (x,y) = pg.mouse.get_pos()
         rate = self.frameTime / 20.0
-        theta_increment = 10.0 * rate * ((self.screenWidth / 2.0) - x)
-        phi_increment = 10.0 * rate * ((self.screenHeight / 2.0) - y)
+        theta_increment = rate * ((self.screenWidth / 2.0) - x)
+        phi_increment = rate * ((self.screenHeight / 2.0) - y)
         dTheta = np.array([0, theta_increment, phi_increment], dtype=np.float32)
         self.scene.spin_camera(dTheta)
         pg.mouse.set_pos((self.screenWidth // 2,self.screenHeight // 2))
