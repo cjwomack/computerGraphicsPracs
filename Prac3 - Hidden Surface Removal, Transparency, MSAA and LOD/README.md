@@ -250,3 +250,6 @@ Load up the folder for MSAA, run it and note the appearance of the triangle boun
 The quick solution is to jump into the renderer's create_framebuffer function and change the number of samples. Graphics cards won't let this value go above 16 as the visual improvement isn't that noticeable beyond 16 samples.
 
 You aren't expected to understand how this code is working yet, but you are  encouraged to have a look at it. The basic idea is that while we have a default framebuffer created for us, we can also make some of our own and render to them. We create color buffers (textures) and depth/stencil buffers (renderbuffer objects, basically lightweight versions of textures with less features). We then do our multisample rendering and resolve the colorbuffer to a single sample texture. How do we draw that texture onto the screen? We fake it, by creating a rectangle the same size as the screen and adding the color buffer to it. This might be a little advanced at this early stage, but it is good to be aware of.
+
+### Level of Detail
+A common performance optimisation in games is level of detail for meshes. As objects get further away, they're drawn with low poly meshes. Load up the LOD folder and run the program. Tweak the level of detail function get_level in the renderer class until the mesh is optimal on your system.
