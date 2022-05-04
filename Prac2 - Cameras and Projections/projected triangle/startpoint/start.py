@@ -96,8 +96,7 @@ class App:
         self.quit()
 
     def quit(self):
-        self.cube.destroy()
-        self.wood_texture.destroy()
+        self.triangle_mesh.destroy()
         glDeleteProgram(self.shader)
         pg.quit()
 
