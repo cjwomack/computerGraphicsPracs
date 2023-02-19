@@ -420,14 +420,6 @@ class Engine:
 
         #general OpenGL configuration
         glClearColor(self.palette["blue"][0], self.palette["blue"][1], self.palette["blue"][2], 1)
-        self.shader = self.createShader("shaders/vertex.txt",
-                                        "shaders/fragment.txt")
-        
-        glUseProgram(self.shader)
-        glEnable(GL_DEPTH_TEST)
-        glLineWidth(2.0)
-        self.modelLocation = glGetUniformLocation(self.shader, "model")
-        self.viewProjLocation = glGetUniformLocation(self.shader, "viewProjection")
 
         self.ground = GroundGrid(24, self.palette["light-pink"])
         self.playerModel = ObjModel("models", "rocket.obj", self.palette["orange"])
@@ -522,6 +514,15 @@ class Engine:
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(0))
         glEnableVertexAttribArray(1)
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(12))
+
+        self.shader = self.createShader("shaders/vertex.txt",
+                                        "shaders/fragment.txt")
+        
+        glUseProgram(self.shader)
+        glEnable(GL_DEPTH_TEST)
+        #glLineWidth(2.0)
+        self.modelLocation = glGetUniformLocation(self.shader, "model")
+        self.viewProjLocation = glGetUniformLocation(self.shader, "viewProjection")
     
     def update(self):
 
@@ -728,6 +729,9 @@ class App:
 
     def __init__(self):
         pg.init()
+        pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
+        pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
+        pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK, pg.GL_CONTEXT_PROFILE_CORE)
         self.screenWidth = 800
         self.screenHeight = 600
         pg.display.set_mode((self.screenWidth, self.screenHeight), pg.OPENGL|pg.DOUBLEBUF)
