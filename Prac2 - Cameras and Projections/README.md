@@ -181,7 +181,6 @@ In App's mainLoop:
         self.scene.camera.get_view_transform()
     )
 ```
-If you run this, you'll find that it more or less works, however the mouse movement is a bit stuttering. The issue is that pygame measures mouse coordinates as integers, not decimals. The result is that the mouse movement is sampled as a series of discrete steps. GLFW fixes this issue, however unfortunately (as of updating these exercises), the Python GLFW bindings are not working very well.
 
 ### Third Person Camera
 We know how to make a first person camera! That's cool, how can we extend it? Well obviously if we represent the camera and player as different objects, then put some distance between them, we'll have a basic third person camera. But there are some extra features we can add.

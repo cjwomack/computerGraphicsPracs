@@ -1,4 +1,5 @@
-import pygame as pg
+import glfw
+import glfw.GLFW as GLFW_CONSTANTS
 from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram,compileShader
 import numpy as np
@@ -77,12 +78,16 @@ class Entity:
 class Triangle(Entity):
     """ A triangle that spins. """
     
-    def update(self) -> None:
+    def update(self, rate: float) -> None:
         """
             Update the triangle.
+
+            Parameters:
+
+                rate: framerate correction factor
         """
 
-        self.eulers[2] += 0.25
+        self.eulers[2] += rate * 0.25
         if self.eulers[2] > 360:
             self.eulers[2] -= 360
 
@@ -174,12 +179,16 @@ class Scene:
             eulers = [0,0,0]
         )
     
-    def update(self) -> None:
+    def update(self, rate: float) -> None:
         """ 
             Update all objects managed by the scene.
+
+            Parameters:
+
+                rate: framerate correction factor
         """
 
-        self.triangle.update()
+        self.triangle.update(rate)
         self.camera.update()
     
     def move_camera(self, dPos: np.ndarray) -> None:
@@ -213,7 +222,7 @@ class App:
     def __init__(self):
         """ Set up the program """
 
-        self.set_up_pygame()
+        self.set_up_glfw()
         
         self.make_assets()
 
@@ -223,22 +232,32 @@ class App:
 
         self.set_up_input_systems()
 
+        self.set_up_timer()
+
         self.mainLoop()
     
-    def set_up_pygame(self) -> None:
-        """ Set up the pygame environment """
+    def set_up_glfw(self) -> None:
+        """ Set up the glfw environment """
+
         self.screenWidth = 640
         self.screenHeight = 480
-        pg.init()
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK,
-                                    pg.GL_CONTEXT_PROFILE_CORE)
-        pg.display.set_mode(
-            (self.screenWidth, self.screenHeight), 
-            pg.OPENGL|pg.DOUBLEBUF
+
+        glfw.init()
+        glfw.window_hint(GLFW_CONSTANTS.GLFW_CONTEXT_VERSION_MAJOR,3)
+        glfw.window_hint(GLFW_CONSTANTS.GLFW_CONTEXT_VERSION_MINOR,3)
+        glfw.window_hint(
+            GLFW_CONSTANTS.GLFW_OPENGL_PROFILE, 
+            GLFW_CONSTANTS.GLFW_OPENGL_CORE_PROFILE
         )
-        self.clock = pg.time.Clock()
+        glfw.window_hint(
+            GLFW_CONSTANTS.GLFW_OPENGL_FORWARD_COMPAT, 
+            GLFW_CONSTANTS.GLFW_TRUE
+        )
+        glfw.window_hint(GLFW_CONSTANTS.GLFW_DOUBLEBUFFER, False)
+        self.window = glfw.create_window(
+            self.screenWidth, self.screenHeight, "Title", None, None
+        )
+        glfw.make_context_current(self.window)
 
     def make_assets(self) -> None:
         """ Make any assets used by the App"""
@@ -273,8 +292,13 @@ class App:
     def set_up_input_systems(self) -> None:
         """ Run any mouse/keyboard configuration here. """
 
-        pg.mouse.set_visible(False)
-        pg.mouse.set_pos(
+        glfw.set_input_mode(
+            self.window, 
+            GLFW_CONSTANTS.GLFW_CURSOR, 
+            GLFW_CONSTANTS.GLFW_CURSOR_HIDDEN
+        )
+        glfw.set_cursor_pos(
+            self.window,
             self.screenWidth // 2, 
             self.screenHeight // 2
         )
@@ -297,25 +321,37 @@ class App:
             14: 180
         }
     
+    def set_up_timer(self) -> None:
+        """
+            Set up the variables needed to measure the framerate
+        """
+        self.lastTime = glfw.get_time()
+        self.currentTime = 0
+        self.numFrames = 0
+        self.frameTime = 0
+
     def mainLoop(self) -> None:
         """ Run the App """
 
         glClearColor(0.1, 0.2, 0.2, 1)
-        glViewport(0, 0, self.screenWidth, self.screenHeight)
+        (w,h) = glfw.get_framebuffer_size(self.window)
+        glViewport(0,0,w, h)
         running = True
 
         while (running):
+
             #check events
-            for event in pg.event.get():
-                if (event.type == pg.QUIT) \
-                    or (event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE):
-                    running = False
+            if glfw.window_should_close(self.window) \
+                or glfw.get_key(self.window, GLFW_CONSTANTS.GLFW_KEY_ESCAPE) == GLFW_CONSTANTS.GLFW_PRESS:
+                running = False
             
             self.handleKeys()
             self.handleMouse()
+
+            glfw.poll_events()
             
             #update scene
-            self.scene.update()
+            self.scene.update(self.frameTime / 16.667)
             
             #refresh screen
             glClear(GL_COLOR_BUFFER_BIT)
@@ -331,10 +367,10 @@ class App:
             glBindVertexArray(self.triangle_mesh.vao)
             glDrawArrays(GL_TRIANGLES, 0, self.triangle_mesh.vertex_count)
 
-            pg.display.flip()
+            glFlush()
 
             #timing
-            self.clock.tick(60)
+            self.calcuateFramerate()
 
         self.quit()
     
@@ -346,22 +382,29 @@ class App:
         combo = 0
         directionModifier = 0
 
-        keys = pg.key.get_pressed()
-
-        if keys[pg.K_w]:
+        if glfw.get_key(
+            self.window, GLFW_CONSTANTS.GLFW_KEY_W
+            ) == GLFW_CONSTANTS.GLFW_PRESS:
             combo += 1
-        if keys[pg.K_a]:
+        elif glfw.get_key(
+            self.window, GLFW_CONSTANTS.GLFW_KEY_A
+            ) == GLFW_CONSTANTS.GLFW_PRESS:
             combo += 2
-        if keys[pg.K_s]:
+        elif glfw.get_key(
+            self.window, GLFW_CONSTANTS.GLFW_KEY_S
+            ) == GLFW_CONSTANTS.GLFW_PRESS:
             combo += 4
-        if keys[pg.K_d]:
+        elif glfw.get_key(
+            self.window, GLFW_CONSTANTS.GLFW_KEY_D
+            ) == GLFW_CONSTANTS.GLFW_PRESS:
             combo += 8
         
         if combo in self.walk_offset_lookup:
             
             directionModifier = self.walk_offset_lookup[combo]
+            rate = self.frameTime / 16.667
             
-            dPos = 0.1 * np.array(
+            dPos = 0.1 * rate * np.array(
                 [
                     np.cos(np.deg2rad(self.scene.camera.eulers[2] + directionModifier)),
                     np.sin(np.deg2rad(self.scene.camera.eulers[2] + directionModifier)),
@@ -377,19 +420,35 @@ class App:
             Handle mouse movement.
         """
 
-        (x,y) = pg.mouse.get_pos()
-        theta_increment = (self.screenWidth / 2.0) - x
-        phi_increment = (self.screenHeight / 2.0) - y
+        (x,y) = glfw.get_cursor_pos(self.window)
+        rate = self.frameTime / 16.667
+        theta_increment = rate * ((self.screenWidth / 2.0) - x)
+        phi_increment = rate * ((self.screenHeight / 2.0) - y)
         dEulers = np.array([0, phi_increment, theta_increment], dtype=np.float32)
         self.scene.spin_camera(dEulers)
-        pg.mouse.set_pos(self.screenWidth // 2, self.screenHeight // 2)
+        glfw.set_cursor_pos(self.window, self.screenWidth // 2, self.screenHeight // 2)
+    
+    def calcuateFramerate(self) -> None:
+        """
+            Calculate the framerate and frametime
+        """
+
+        self.currentTime = glfw.get_time()
+        delta = self.currentTime - self.lastTime
+        if (delta >= 1):
+            framerate = int(self.numFrames/delta)
+            glfw.set_window_title(self.window, f"Running at {framerate} fps.")
+            self.lastTime = self.currentTime
+            self.numFrames = -1
+            self.frameTime = float(1000.0 / max(60,framerate))
+        self.numFrames += 1
     
     def quit(self) -> None:
         """ Free any allocated memory """
 
         self.triangle_mesh.destroy()
         glDeleteProgram(self.shader)
-        pg.quit()
+        glfw.terminate()
 
 class TriangleMesh:
 
