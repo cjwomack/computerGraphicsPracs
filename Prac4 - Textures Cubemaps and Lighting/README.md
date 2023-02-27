@@ -181,4 +181,60 @@ glEnable(GL_DEPTH_TEST)
 ```
 And there we have it! It's pretty striking how this opens up our scene visually.
 ### 3: Reflections
-To be completed...
+Besides just making cool sky effects, cubemaps can be used in multiple shaders. The upshot of this is that we can pass the sky into our regular shader also, then use that for quick and easy refractions/reflections.\
+The advantage of this is that it's incredibly fast, the downside is that it isn't a truly dynamic reflection. If you've ever used Unreal engine, you may notice that the default scene comes with a reflection capturer object, the purpose of this is to take a snapshot of the environment once and save that to a cubemap for quick reflections.\
+But, back to the task at hand. How can we calculate a reflection? We need to pass a little more data to our shader, the fragment shader will need to know:
+- where our fragment of interest is
+- where the camera is
+- what the normal vector of the fragment is
+The fragment's position and normal can be passed along by the vertex shader:\
+In vertex.txt:
+```
+#version 330 core
+
+layout (location=0) in vec3 vertexPos;
+layout (location=1) in vec2 vertexTexCoord;
+layout (location=2) in vec3 vertexNormal;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+out vec2 fragmentTexCoord;
+out vec3 fragmentNormal;
+out vec3 fragmentPos;
+
+void main()
+{
+    gl_Position = projection * view * model * vec4(vertexPos, 1.0);
+    fragmentTexCoord = vertexTexCoord;
+    fragmentNormal = vec3(model * vec4(vertexNormal, 0.0));
+    fragmentPos = vec3(model * vec4(vertexPos, 1.0));
+}
+```
+This can then be taken in by the fragment shader, as well as the camera's position (in the uniform block)\
+In fragment.txt:
+```
+#version 330 core
+
+in vec2 fragmentTexCoord;
+in vec3 fragmentNormal;
+in vec3 fragmentPos;
+
+uniform samplerCube skyTexture;
+uniform sampler2D imageTexture;
+uniform vec3 viewerPos;
+
+out vec4 color;
+
+void main()
+{
+    vec3 viewerToFragment = normalize(fragmentPos - viewerPos);
+    vec3 reflectedRayDirection = reflect(viewerToFragment, fragmentNormal);
+    vec4 skyColor = texture(skyTexture, reflectedRayDirection);
+    vec4 baseColor = texture(imageTexture, fragmentTexCoord);
+    color = skyColor * baseColor;
+}
+```
+Here we're using GLSL's inbuilt reflect function, which calculates the standard vector reflection of an incident direction about a normal. It's worth checking through the source code to see how this is supported on the CPU side. In particular, the make_shader function has changed a little, PyOpenGL's shader validation code sometimes throws unexpected errors.\
+This is really just scratching the surface of the capabilities of textures and cubemaps, a lot of topics here can be extended for a more in depth project.
