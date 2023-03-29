@@ -527,6 +527,7 @@ class Renderer:
 
         self.screenWidth = screenWidth
         self.screenHeight = screenHeight
+        self.t = 0
 
         self.set_up_opengl(window)
         
@@ -636,6 +637,11 @@ class Renderer:
             self.shaders[PIPELINE_3D], "view")
         self.cameraPosLocation = glGetUniformLocation(
             self.shaders[PIPELINE_3D], "viewerPos")
+        
+        glUseProgram(self.shaders[PIPELINE_POST])
+        self.tLocation = glGetUniformLocation(
+            self.shaders[PIPELINE_POST], "t"
+        )
     
     def render(
         self, camera: Player, 
@@ -651,6 +657,10 @@ class Renderer:
                             entity types, for each of these there is a list
                             of entities.
         """
+
+        self.t += 0.1
+        if self.t > 2 * np.pi:
+            self.t -= 2 * np.pi
 
         #regular 3D rendering to our custom framebuffer
         glBindFramebuffer(GL_FRAMEBUFFER, self.framebuffer.fbo)
@@ -703,6 +713,7 @@ class Renderer:
         glDisable(GL_DEPTH_TEST)
 
         glUseProgram(self.shaders[PIPELINE_POST])
+        glUniform1f(self.tLocation, self.t)
         #bind the texture we just rendered to as the texture we're now going to read from
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D, self.framebuffer.colorBuffer)

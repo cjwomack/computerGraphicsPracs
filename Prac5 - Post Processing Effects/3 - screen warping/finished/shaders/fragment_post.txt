@@ -3,6 +3,7 @@
 in vec2 fragmentTexCoord;
 
 uniform sampler2D colorbuffer;
+uniform float t;
 
 out vec4 color;
 
@@ -40,15 +41,18 @@ const float gauss_blur_kernel[9] = float[](
 vec4 Edge();
 vec4 Blur();
 float Luminosity_Grayscale(vec3 color);
+vec2 Warp();
 
 vec4 Edge() {
+
+    vec2 texCoord = Warp();
 
     vec3 dx = vec3(0);
     vec3 dy = vec3(0);
     for(int i = 0; i < 9; i++)
     {
-        dx += sobel_dx_kernel[i] * vec3(texture(colorbuffer, fragmentTexCoord.st + offsets[i]));
-        dy += sobel_dy_kernel[i] * vec3(texture(colorbuffer, fragmentTexCoord.st + offsets[i]));
+        dx += sobel_dx_kernel[i] * vec3(texture(colorbuffer, texCoord.st + offsets[i]));
+        dy += sobel_dy_kernel[i] * vec3(texture(colorbuffer, texCoord.st + offsets[i]));
     }
 
     float r = sqrt(dx.r * dx.r + dy.r * dy.r);
@@ -60,11 +64,13 @@ vec4 Edge() {
 
 vec4 Blur() {
 
+    vec2 texCoord = Warp();
+
     vec3 color = vec3(0);
 
     for(int i = 0; i < 9; i++)
     {
-        color += gauss_blur_kernel[i] * vec3(texture(colorbuffer, fragmentTexCoord.st + offsets[i]));
+        color += gauss_blur_kernel[i] * vec3(texture(colorbuffer, texCoord.st + offsets[i]));
     }
     
     return vec4(vec3(Luminosity_Grayscale(color)), 1.0);
@@ -78,8 +84,12 @@ float Luminosity_Grayscale(vec3 color) {
     
 }
 
+vec2 Warp() {
+    const float amplitude = 0.01;
+    return fragmentTexCoord + vec2(amplitude * sin(fragmentTexCoord.y * 20 + t), 0);
+}
+
 void main()
 {
-    //color = 0.4 * vec4(175.0/255, 240.0/255, 129.0/255, 1.0) * Blur() + 0.6 * Edge();
-    color = Edge();
+    color = 0.4 * vec4(240.0/255, 175.0/255, 129.0/255, 1.0) * Blur() + 0.6 * Edge();
 }
