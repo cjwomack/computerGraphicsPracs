@@ -1,0 +1,14 @@
+#version 330 core
+
+in vec3 rayDirection;
+
+uniform samplerCube imageTexture;
+
+layout (location = 0) out vec4 color;
+layout (location = 1) out vec4 fx;
+
+void main()
+{
+    color = texture(imageTexture, rayDirection);
+    fx = vec4(vec3(0.5),0.0);
+}

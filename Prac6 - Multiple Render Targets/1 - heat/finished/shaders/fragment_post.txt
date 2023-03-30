@@ -3,6 +3,7 @@
 in vec2 fragmentTexCoord;
 
 uniform sampler2D colorbuffer;
+uniform sampler2D fxbuffer;
 uniform float t;
 
 out vec4 color;
@@ -85,12 +86,11 @@ float Luminosity_Grayscale(vec3 color) {
 }
 
 vec2 Warp() {
-    const float amplitude = 0.01;
+    float amplitude = texture(fxbuffer, fragmentTexCoord).r / 100;
     return fragmentTexCoord + vec2(amplitude * sin(fragmentTexCoord.y * 20 + t), 0);
 }
 
 void main()
 {
-    color = 0.4 * vec4(240.0/255, 175.0/255, 129.0/255, 1.0) * Blur() + 0.6 * Edge();
-    //color = Edge();
+    color = 0.8 * vec4(240.0/255, 175.0/255, 129.0/255, 1.0) * Blur() + 0.2 * Edge();
 }
