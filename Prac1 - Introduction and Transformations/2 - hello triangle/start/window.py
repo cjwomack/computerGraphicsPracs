@@ -169,7 +169,7 @@ class Triangle:
         stride_in_bytes = None
         offset_in_bytes = None
         if task_2_2_ready:
-            glEnableVertexArrayAttrib(attribute_index)
+            glEnableVertexAttribArray(attribute_index)
             glVertexAttribPointer(
                 attribute_index, elements_per_attribute, 
                 element_type, normalized,
