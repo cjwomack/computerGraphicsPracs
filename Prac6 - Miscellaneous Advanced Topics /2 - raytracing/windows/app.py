@@ -9,26 +9,38 @@ class App:
 
     def __init__(self):
 
-        pg.init()
         self.screenWidth = 800
         self.screenHeight = 600
+
+        self.setup_pygame()
+
+        self.make_assets()
+
+        self.setup_timer()
+
+        self.mainLoop()
+    
+    def setup_pygame(self) -> None:
+
+        pg.init()
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 4)
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 1)
         pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK,
                                     pg.GL_CONTEXT_PROFILE_CORE)
         pg.display.set_mode((self.screenWidth, self.screenHeight), pg.OPENGL|pg.DOUBLEBUF)
+    
+    def make_assets(self) -> None:
 
         self.graphicsEngine = engine.Engine(self.screenWidth, self.screenHeight)
         self.scene = scene.Scene()
+    
+    def setup_timer(self) -> None:
 
         self.lastTime = pg.time.get_ticks()
         self.currentTime = 0
         self.numFrames = 0
         self.frameTime = 0
-        self.lightCount = 0
 
-        self.mainLoop()
-    
     def mainLoop(self):
 
         running = True

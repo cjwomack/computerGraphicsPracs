@@ -1,11 +1,13 @@
 from config import *
+import sphere
+import scene
 
 class Engine:
     """
         Responsible for drawing scenes
     """
 
-    def __init__(self, width, height):
+    def __init__(self, width: int, height: int):
         """
             Initialize a flat raytracing context
             
@@ -25,10 +27,15 @@ class Engine:
                                         "shaders/frameBufferFragment.txt")
         
         self.rayTracerShader = self.createComputeShader("shaders/rayTracer.txt")
-        
-        glUseProgram(self.shader)
+
+        self.queryUniformLocations()
     
-    def createQuad(self):
+    def createQuad(self) -> None:
+        """
+            Create a screen-sized quad, later this can be used to draw
+            the result of the compute shader.
+        """
+
         # x, y, z, s, t
         self.vertices = np.array(
             ( 1.0,  1.0, 0.0, 1.0, 1.0, #top-right
@@ -53,46 +60,65 @@ class Engine:
         glEnableVertexAttribArray(1)
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(12))
     
-    def createColorBuffer(self):
+    def createColorBuffer(self) -> None:
+        """
+            Create the texture onto which the compute shader will draw
+            the rendered image.
+        """
 
+        #Make a texture and bind it.
         self.colorBuffer = glGenTextures(1)
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D, self.colorBuffer)
 
+        #Set sampling parameters.
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 
+        #Allocate space.
+        glTexImage2D(
+            GL_TEXTURE_2D, 0, GL_RGBA32F, 
+            self.screenWidth, self.screenHeight, 
+            0, GL_RGBA, GL_FLOAT, None)
     
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, self.screenWidth, self.screenHeight, 0, GL_RGBA, GL_FLOAT, None)
-    
-    def createResourceMemory(self):
-
+    def createResourceMemory(self) -> None:
         """
-            allocate storage for up to 1024 spheres (why not?)
+            A handy way to pass a large chunk of data is to
+            encode it in a texture. 
+            There are other ways, eg. Shader Storage Buffer Objects,
+            but those seem to be less reliable in python.
         """
 
-        sphereData = []
+        spheres_max = 1024
+        blocks_per_sphere = 2
+        # Spheres will be encoded in the following layout:
+        # (cx cy cz radius) (r g b _)
+        # and hence require two pixels each.
+        self.sphereData = np.zeros(spheres_max * 4 * blocks_per_sphere, dtype=np.float32)
+        # The texture layout in memory will be:
+        # row = sphere, column = block within sphere
 
-        # (cx cy cz r) (r g b _)
-        for i in range(1024):
-            for attribute in range(8):
-                sphereData.append(0.0)
-        self.sphereData = np.array(sphereData, dtype=np.float32)
-
+        # Make texture and bind it.
         self.sphereDataTexture = glGenTextures(1)
         glActiveTexture(GL_TEXTURE1)
         glBindTexture(GL_TEXTURE_2D, self.sphereDataTexture)
 
+        # Set sampling parameters (not used, but still, why not?)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
     
-        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA32F,2,1024,0,GL_RGBA,GL_FLOAT,bytes(self.sphereData))
+        # Allocate space.
+        glTexImage2D(
+            GL_TEXTURE_2D,0,
+            GL_RGBA32F,2,1024,
+            0,GL_RGBA,GL_FLOAT,bytes(self.sphereData)
+        )
     
-    def createShader(self, vertexFilepath, fragmentFilepath):
+    def createShader(self, vertexFilepath: str, fragmentFilepath: str) -> int:
         """
             Read source code, compile and link shaders.
             Returns the compiled and linked program.
@@ -109,7 +135,7 @@ class Engine:
         
         return shader
     
-    def createComputeShader(self, filepath):
+    def createComputeShader(self, filepath: str) -> int:
         """
             Read source code, compile and link shaders.
             Returns the compiled and linked program.
@@ -122,55 +148,91 @@ class Engine:
         
         return shader
 
-    def recordSphere(self, i, _sphere):
-
-        self.sphereData[8*i]     = _sphere.center[0]
-        self.sphereData[8*i + 1] = _sphere.center[1]
-        self.sphereData[8*i + 2] = _sphere.center[2]
-
-        self.sphereData[8*i + 3] = _sphere.radius
-
-        self.sphereData[8*i + 4] = _sphere.color[0]
-        self.sphereData[8*i + 5] = _sphere.color[1]
-        self.sphereData[8*i + 6] = _sphere.color[2]
+    def queryUniformLocations(self) -> None:
+        """
+            Get uniform locations from shader for reuse.
+        """
+        glUseProgram(self.rayTracerShader)
+        self.viewPosLocation = glGetUniformLocation(
+            self.rayTracerShader, 
+            "viewer.position"
+        )
+        self.viewForwardsLocation = glGetUniformLocation(
+            self.rayTracerShader, 
+            "viewer.forwards"
+        )
+        self.viewRightLocation = glGetUniformLocation(
+            self.rayTracerShader, 
+            "viewer.right"
+        )
+        self.viewUpLocation = glGetUniformLocation(
+            self.rayTracerShader, 
+            "viewer.up"
+        )
+        self.sphereCountLocation = glGetUniformLocation(
+            self.rayTracerShader, 
+            "sphereCount"
+        )
     
-    def prepareScene(self, scene):
+    def recordSphere(self, i: int, _sphere: sphere.Sphere) -> None:
+        """
+            Encode a representation of the given sphere at index i in the
+            sphere texture.
+        """
+        baseIndex: int = 8*i
+
+        self.sphereData[baseIndex:baseIndex + 3] = _sphere.center[:]
+
+        self.sphereData[baseIndex + 3] = _sphere.radius
+
+        self.sphereData[baseIndex + 4:baseIndex + 7] = _sphere.color[:]
+    
+    def prepareScene(self, _scene: scene.Scene) -> None:
         """
             Send scene data to the shader.
         """
 
         glUseProgram(self.rayTracerShader)
 
-        glUniform3fv(glGetUniformLocation(self.rayTracerShader, "viewer.position"), 1, scene.camera.position)
-        glUniform3fv(glGetUniformLocation(self.rayTracerShader, "viewer.forwards"), 1, scene.camera.forwards)
-        glUniform3fv(glGetUniformLocation(self.rayTracerShader, "viewer.right"), 1, scene.camera.right)
-        glUniform3fv(glGetUniformLocation(self.rayTracerShader, "viewer.up"), 1, scene.camera.up)
+        #Camera Parameters
+        glUniform3fv(self.viewPosLocation, 1, _scene.camera.position)
+        glUniform3fv(self.viewForwardsLocation, 1, _scene.camera.forwards)
+        glUniform3fv(self.viewRightLocation, 1, _scene.camera.right)
+        glUniform3fv(self.viewUpLocation, 1, _scene.camera.up)
 
-        glUniform1f(glGetUniformLocation(self.rayTracerShader, "sphereCount"), len(scene.spheres))
+        #Sphere Count
+        glUniform1f(self.sphereCountLocation, len(_scene.spheres))
 
-        for i,_sphere in enumerate(scene.spheres):
+        #Record the data for all the spheres in the scene
+        for i,_sphere in enumerate(_scene.spheres):
             self.recordSphere(i, _sphere)
         
+        #Send the recorded sphere data to the sphere texture,
+        #   then bind that texture so the compute shader can read it.
         glActiveTexture(GL_TEXTURE1)
         glBindTexture(GL_TEXTURE_2D, self.sphereDataTexture)
         glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA32F,2,1024,0,GL_RGBA,GL_FLOAT,bytes(self.sphereData))
         glBindImageTexture(1, self.sphereDataTexture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F)
         
-    def renderScene(self, scene):
+    def renderScene(self, _scene: scene.Scene) -> None:
         """
             Draw all objects in the scene
         """
         
         glUseProgram(self.rayTracerShader)
 
-        self.prepareScene(scene)
+        self.prepareScene(_scene)
 
+        #Bind the color buffer so the compute shader can write to it.
         glActiveTexture(GL_TEXTURE0)
         glBindImageTexture(0, self.colorBuffer, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F)
         
+        #Despatch the compute shader: let it do its thing!
+        #Note that this is based on a subgroup size of 64, which seems to be
+        #ideal for most GPUs.
         glDispatchCompute(int(self.screenWidth / 8), int(self.screenHeight / 8), 1)
   
-        # make sure writing to image has finished before read
+        # barrier will pause the pipeline until the compute shader has finished.
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT)
         glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F)
         self.drawScreen()
