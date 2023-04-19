@@ -364,13 +364,13 @@ class Wall:
 
         depth_a *= -1
         depth_a = max(depth_a,0.01)
-        x_a = self.pos_a_view[0]/depth_a
+        x_a = x_a/depth_a
         top_a = -(self.z+self.height-player.camera_z)/depth_a
         bottom_a = -(self.z-player.camera_z)/depth_a
 
         depth_b *= -1
         depth_b = max(depth_b,0.01)
-        x_b = self.pos_b_view[0]/depth_b
+        x_b = x_b/depth_b
         top_b = -(self.z+self.height-player.camera_z)/depth_b
         bottom_b = -(self.z-player.camera_z)/depth_b
 
