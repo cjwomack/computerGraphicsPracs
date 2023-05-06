@@ -7,7 +7,6 @@ uniform sampler2D colorbuffer;
 out vec4 color;
 
 const float offset = 1.0 / 640.0;
-
 const vec2 offsets[9] = vec2[](
     vec2(-offset,  offset), // top-left
     vec2( 0.0f,    offset), // top-center
@@ -26,17 +25,9 @@ const float sobel_dx_kernel[9] = float[](
     1, 0, -1
 );
 
-const float sobel_dy_kernel[9] = float[](
-     1,  2,  1,
-     0,  0,  0,
-    -1, -2, -1
-);
+//TODO: define a sobel dy kernel
 
-const float gauss_blur_kernel[9] = float[](
-    1.0 / 16.0, 2.0 / 16.0, 1.0 / 16.0,
-    2.0 / 16.0, 4.0 / 16.0, 2.0 / 16.0,
-    1.0 / 16.0, 2.0 / 16.0, 1.0 / 16.0
-);
+//TODO: define a blur kernel
 
 vec4 Edge();
 vec4 Blur();
@@ -44,14 +35,19 @@ float Luminosity_Grayscale(vec3 color);
 
 vec4 Edge() {
 
+    //dx stores the partial derivative dColor/dx
     vec3 dx = vec3(0);
+    //dy stores the partial derivative dColor/dy
     vec3 dy = vec3(0);
+
+    //Apply the edge filter kernels
     for(int i = 0; i < 9; i++)
     {
         dx += sobel_dx_kernel[i] * vec3(texture(colorbuffer, fragmentTexCoord.st + offsets[i]));
         dy += sobel_dy_kernel[i] * vec3(texture(colorbuffer, fragmentTexCoord.st + offsets[i]));
     }
 
+    //The colors are then the individual magnitudes of grad(Color)
     float r = sqrt(dx.r * dx.r + dy.r * dy.r);
     float g = sqrt(dx.g * dx.g + dy.g * dy.g);
     float b = sqrt(dx.b * dx.b + dy.b * dy.b);
@@ -59,17 +55,7 @@ vec4 Edge() {
     return vec4(r, g, b, 1.0);
 }
 
-vec4 Blur() {
-
-    vec3 color = vec3(0);
-
-    for(int i = 0; i < 9; i++)
-    {
-        color += gauss_blur_kernel[i] * vec3(texture(colorbuffer, fragmentTexCoord.st + offsets[i]));
-    }
-    
-    return vec4(vec3(Luminosity_Grayscale(color)), 1.0);
-}
+//TODO: create the blur function
 
 float Luminosity_Grayscale(vec3 color) {
 
@@ -81,6 +67,6 @@ float Luminosity_Grayscale(vec3 color) {
 
 void main()
 {
-    //color = 0.4 * vec4(175.0/255, 240.0/255, 129.0/255, 1.0) * Blur() + 0.6 * Edge();
-    color = Edge();
+    baseColor = vec3(texture(colorbuffer, fragmentTexCoord));
+    color = vec4(vec3(Luminosity_Grayscale(baseColor)), 1.0);
 }

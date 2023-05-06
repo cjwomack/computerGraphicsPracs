@@ -171,5 +171,51 @@ def render(
 ```
 And that's it! Our scene should now be showing in black and white.
 ### 2: Kernel Effects
+Now that the whole screen is available to us as a texture, we can do a little more than just change its colors.
+A kernel is defined as a matrix of coefficients, used to compute a weighted sum around a central fragment.
+For examples of popular kernels, see [wikipedia](https://en.wikipedia.org/wiki/Kernel_(image_processing))
+
+Open up the fragment post shader and try implementing a blur image kernel!
 
 ### 3: Heat Wave!
+Another thing we can do, having access to the whole texture, is warp it somewhat.\
+Let's say our character swims underwater or looks through a looking glass, some regions of the screen will be magnified and warped. this could be an interesting effect to look into for a project. \
+\
+For now the simplest thing we can do is add an offset to our screen coordinates:\
+In fragment_post.txt:
+```
+#version 330 core
+...
+uniform float t;
+...
+//Function declarations
+vec4 Edge();
+vec4 Blur();
+float Luminosity_Grayscale(vec3 color);
+vec2 Warp();
+
+//Function definitions
+vec4 Edge() {
+
+    vec2 texCoord = Warp();
+
+    //apply kernel effect as usual
+    ...
+}
+
+vec4 Blur() {
+
+    vec2 texCoord = Warp();
+
+    //apply kernel effect as usual
+    ...
+}
+
+vec2 Warp() {
+    const float amplitude = 0.01;
+    return fragmentTexCoord + vec2(amplitude * sin(fragmentTexCoord.y * 20 + t), 0);
+}
+
+...
+```
+Here the offset depends on the y coordinate of the screen, but is also animated through time by the t uniform which the engine sends to the shader. Pretty cool! Next week we'll constrain this to just a portion of the world.
