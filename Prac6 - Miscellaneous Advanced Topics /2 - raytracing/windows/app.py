@@ -11,37 +11,37 @@ class App:
 
         self.screenWidth = 800
         self.screenHeight = 600
+        self.setupPygame()
 
-        self.setup_pygame()
+        self.graphicsEngine = engine.Engine(self.screenWidth, self.screenHeight)
+        self.scene = scene.Scene()
 
-        self.make_assets()
-
-        self.setup_timer()
+        self.setupTimer()
 
         self.mainLoop()
     
-    def setup_pygame(self) -> None:
+    def setupPygame(self) -> None:
+        """ Set up pygame. """
 
         pg.init()
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 4)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 1)
+        pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
         pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK,
                                     pg.GL_CONTEXT_PROFILE_CORE)
         pg.display.set_mode((self.screenWidth, self.screenHeight), pg.OPENGL|pg.DOUBLEBUF)
     
-    def make_assets(self) -> None:
-
-        self.graphicsEngine = engine.Engine(self.screenWidth, self.screenHeight)
-        self.scene = scene.Scene()
-    
-    def setup_timer(self) -> None:
+    def setupTimer(self) -> None:
+        """
+            set up the framerate timer
+        """
 
         self.lastTime = pg.time.get_ticks()
-        self.currentTime = 0
+        self.currentTime = pg.time.get_ticks()
         self.numFrames = 0
         self.frameTime = 0
-
-    def mainLoop(self):
+    
+    def mainLoop(self) -> None:
+        """ Run the program """
 
         running = True
         while (running):
@@ -60,7 +60,10 @@ class App:
             self.calculateFramerate()
         self.quit()
     
-    def calculateFramerate(self):
+    def calculateFramerate(self) -> None:
+        """
+            Calculate the framerate of the program.
+        """
 
         self.currentTime = pg.time.get_ticks()
         delta = self.currentTime - self.lastTime
@@ -72,6 +75,9 @@ class App:
             self.frameTime = float(1000.0 / max(1,framerate))
         self.numFrames += 1
 
-    def quit(self):
+    def quit(self) -> None:
+        """
+            For some reason, the graphics engine's destructor throws weird errors.
+        """
         #self.graphicsEngine.destroy()
         pg.quit()
