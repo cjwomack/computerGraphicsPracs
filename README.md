@@ -1,4 +1,6 @@
-# COSC3000 Practicals:
+# Forked from https://github.com/amengede
+
+## COSC3000 Practicals:
 
 ### Introduction
 Welcome to the COSC3000 pracs! These sessions are a crash course covering the fundamentals of graphics programming. We'll be using PyOpenGL for instructing, but don't fear, the same concepts will apply in C++, Unity, Blender, or whatever tool you want to use.
