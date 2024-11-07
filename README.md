@@ -1,4 +1,6 @@
-# Forked from https://github.com/amengede
+# Forked from [https://github.com/amengede](https://github.com/amengede) previously as this course was offered at the Uni I studied at.
+
+Please support him and fork his OpenGL tutorial repo here instead - [https://github.com/amengede/OpenGL-for-Beginners](https://github.com/amengede/OpenGL-for-Beginners)
 
 ## COSC3000 Practicals:
 
