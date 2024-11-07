@@ -1,4 +1,4 @@
-# Forked from a now deleted github repository by [https://github.com/amengede](https://github.com/amengede) previously as this course was offered at the Uni I studied at.
+# Forked from a now deleted github repository by [https://github.com/amengede](https://github.com/amengede) previously as this course was offered at the Uni I studied at. As it has been deleted, an unfortunate side effect is it made it look like it was done by me. This was not the case.
 
 Please support him and fork his OpenGL tutorial repo here instead - [https://github.com/amengede/OpenGL-for-Beginners](https://github.com/amengede/OpenGL-for-Beginners)
 
